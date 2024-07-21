@@ -9,3 +9,7 @@ LangChain is a framework for building applications with large language models (L
 Open `01_FinanceBot.ipynb` and practice
 
 We will build an agent that includes many tools to process different types from users. 
+
+
+## Linkin Profile
+![alt text](imgs/01_LinkinSystem_Architecture.png)
