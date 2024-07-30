@@ -19,7 +19,7 @@ else:
 
 data = {
     "model": "mistral-small-latest",
-    "messages": [{"role": "user", "content": "What is the best French cheese?"}],
+    "messages": [{"role": "user", "content": "Heloo?"}],
     "stream": True,
 }
 
@@ -31,12 +31,16 @@ with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as 
         print(chunk)
         print("\n\n")
 
-# print content
-# #write the streaming to terminal
-# with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
-#     for chunk in r.iter_content(1024):
-#         # print(chunk.decode().split("data: ")[1])
-#         response_dict = json.loads(chunk.decode().split("data: ")[1])
-#         content = response_dict["choices"][0]["delta"]["content"]
+# write the streaming to terminal
+with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
+    for chunk in r.iter_content(1024):
+        # print(chunk.decode().split("data: ")[1])
+        response_dict = json.loads(chunk.decode().split("data: ")[1])
+        content = response_dict["choices"][0]["delta"]["content"]
 
-#         print(content, end="")
+        print(content, end="")
+
+
+with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
+    for chunk in r.iter_content(1024):
+        print(chunk, "")
