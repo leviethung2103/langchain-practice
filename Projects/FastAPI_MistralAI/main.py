@@ -21,7 +21,11 @@ from langchain_core.messages import BaseMessage
 from langchain_core.outputs import LLMResult
 from typing import Any, List
 from loguru import logger
+from langchain_core.prompts import PromptTemplate
 import sys
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
 
 app = FastAPI()
 load_dotenv(override=True)
@@ -209,6 +213,7 @@ class CustomAsyncCallbackHandler(AsyncIteratorCallbackHandler):
     async def on_llm_new_token(self, token: str, **kwargs: Any):
         self.content += token
         if token is not None and token != "":
+            print("token", token)
             chunk = ChatCompletionChunk(
                 id=self.msg_id,
                 object="chat.completion.chunk",
@@ -261,7 +266,8 @@ class CustomAsyncCallbackHandler(AsyncIteratorCallbackHandler):
         self.done.set()
 
 
-async def langchain_generator(input_text: str | list):
+async def llm_generator(input_text: str | list):
+    """Use the LLM Model"""
     # callback = AsyncIteratorCallbackHandler()
     callback = CustomAsyncCallbackHandler()
     llm = ChatOpenAI(streaming=True, verbose=True, callbacks=[callback], api_key=OPENAI_API_KEY)
@@ -281,6 +287,60 @@ async def langchain_generator(input_text: str | list):
         callback.done.set()
 
     await task
+
+
+async def langchain_generator_simple(input_text: str | list):
+    """Use the chain. I've used 2 methods for streaming data"""
+
+    # callback for the llm does not work -> it's removed
+    llm = ChatOpenAI(streaming=True, verbose=True, api_key=OPENAI_API_KEY)
+
+    prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
+    parser = StrOutputParser()
+    chain = prompt | llm | parser
+
+    # * Method 1: Sync stream -> wait for the stream to finish to process new request
+    # for chunk in chain.stream({"topic": "parrot"}):
+    #     chunk = ChatCompletionChunk(
+    #         id="12312",
+    #         object="chat.completion.chunk",
+    #         created=3283120793813,
+    #         model="mistral-medium-latest",
+    #         choices=[
+    #             ChatCompletionChunkChoice(
+    #                 index=0,
+    #                 delta=ChatCompletionChunkMessage(content=chunk, rolej="assistant"),
+    #                 finish_reason=None,
+    #                 logprobs=None,
+    #             )
+    #         ],
+    #     )
+
+    #     chunk_dict = json.dumps(chunk.dict())
+    #     new_token = f"data: {chunk_dict}\n\n"
+    #     yield new_token
+
+    # * Method 2: Async stream -> wait for the stream to finish to process new request
+    # * Improve the performance when generating the request
+    async for chunk in chain.astream({"topic": "parrot"}):
+        chunk = ChatCompletionChunk(
+            id="12312",
+            object="chat.completion.chunk",
+            created=3283120793813,
+            model="mistral-medium-latest",
+            choices=[
+                ChatCompletionChunkChoice(
+                    index=0,
+                    delta=ChatCompletionChunkMessage(content=chunk, role="assistant"),
+                    finish_reason=None,
+                    logprobs=None,
+                )
+            ],
+        )
+
+        chunk_dict = json.dumps(chunk.dict())
+        new_token = f"data: {chunk_dict}\n\n"
+        yield new_token
 
 
 def convert_to_messages(message_list) -> List[List[BaseMessage]]:
@@ -384,5 +444,7 @@ async def chat_completions(request: Request, data: ChatCompletionInput):
         # return StreamingResponse(generator, media_type="text/event-stream")
 
         # data:messages is a list of dictionaries, convert it to a list of HumanMessage and AIMessage objects
-        response = langchain_generator(data.messages)
+
+        # response = llm_generator(data.messages)
+        response = langchain_generator_simple(data.messages)
         return StreamingResponse(response, media_type="text/event-stream")

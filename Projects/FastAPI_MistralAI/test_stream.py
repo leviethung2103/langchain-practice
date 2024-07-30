@@ -26,19 +26,19 @@ data = {
 headers = {"Content-type": "application/json", "Authorization": f"Bearer {BEAR_TOKEN_API_KEY}"}
 
 # print chunk
-with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
-    for chunk in r.iter_content(1024):
-        print(chunk)
-        print("\n\n")
+# with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
+#     for chunk in r.iter_content(1024):
+#         print(chunk)
+#         print("\n\n")
 
-# write the streaming to terminal
-with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
-    for chunk in r.iter_content(1024):
-        # print(chunk.decode().split("data: ")[1])
-        response_dict = json.loads(chunk.decode().split("data: ")[1])
-        content = response_dict["choices"][0]["delta"]["content"]
+# # write the streaming to terminal
+# with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
+#     for chunk in r.iter_content(1024):
+#         # print(chunk.decode().split("data: ")[1])
+#         response_dict = json.loads(chunk.decode().split("data: ")[1])
+#         content = response_dict["choices"][0]["delta"]["content"]
 
-        print(content, end="")
+#         print(content, end="")
 
 
 with requests.post(url, data=json.dumps(data), headers=headers, stream=True) as r:
